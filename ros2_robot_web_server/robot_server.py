@@ -43,13 +43,13 @@ class RobotServer(Node):
         self.subscription = self.create_subscription(String, topic, self.serial_message_callback, 10)
 
         # Create timer to read from serial port for any incoming messages
-        self.timer = self.create_timer(0.1, self.serial_read_callback)
+        self.timer = self.create_timer(0.05, self.serial_read_callback)
 
     def serial_message_callback(self, msg):
         if self.serial and self.serial.is_open:
             try:
                 self.serial.write(msg.data.encode('utf-8'))
-                self.get_logger().info(f'Sent message to serial: {msg.data}')
+                self.get_logger().info(f'Sent: {msg.data}')
             except serial.SerialException as e:
                 self.get_logger().error(f'Error sending to serial: {e}')
         else:
@@ -60,7 +60,7 @@ class RobotServer(Node):
             try:
                 if self.serial.in_waiting > 0:
                     received_data = self.serial.readline().decode('utf-8').strip()
-                    self.get_logger().info(f'Received from serial: {received_data}')
+                    self.get_logger().info(f'{received_data}')
             except serial.SerialException as e:
                 self.get_logger().error(f'Error reading from serial: {e}')
 
