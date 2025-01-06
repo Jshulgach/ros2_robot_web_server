@@ -1,5 +1,6 @@
 
 # Python imports
+import time
 import serial
 
 # ROS2 imports
@@ -30,7 +31,7 @@ class RobotServer(Node):
         self.init_subscriptions()
 
         # Create timer to read from serial port for any incoming messages and sent joint state requests to publish
-        self.read_timer = self.create_timer(0.1, self.read_serial_cb)
+        #self.read_timer = self.create_timer(0.05, self.read_serial_cb)
         self.joint_state_timer = self.create_timer(self.joint_state_publish_rate, self.joint_state_cb)
 
         # Attempt to connect to the serial port
@@ -39,7 +40,18 @@ class RobotServer(Node):
             self.get_logger().info(f'Successfully connected to serial port {self.port}')
             # Try sending the Ctrl+D character to restart the pico in case it isn't automatically started
             self.serial.write(b'\x04')
+            time.sleep(0.1)
             self.serial.write(b'\x04')
+            time.sleep(0.1)
+
+            # Set debug mode to off
+            self.serial.write(b'debug:false;')
+            time.sleep(0.1)
+
+            # flush the serial buffer
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+
             self.connected = True
         except serial.SerialException as e:
             self.get_logger().error(f'Failed to connect to serial port: {e}')
@@ -91,10 +103,10 @@ class RobotServer(Node):
 
     def joint_state_cb(self):
         # Send a request to the robot to publish its joint states
-        msg = self.serial_message(String(data='get_joint_states'))
+        msg = self.serial_message(String(data='get_joints;'))
         # [594562.750][Controller][0, 0, 0, 0, 0, 0]
         # Get the joint state from the string
-        joint_state = msg.data.split('[')[1].split(']')[0].split(',')
+        joint_state = msg.split('[')[1].split(']')[0].split(',')
 
         # Build the JointState message
         joint_state_msg = JointState()
